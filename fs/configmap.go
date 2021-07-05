@@ -14,12 +14,8 @@ type configEnvVars string
 
 // Get a config item from the environment variables if possible
 func (configName configEnvVars) Get(key string) (value string, ok bool) {
-	envKey := ConfigToEnv(string(configName), key)
-	value, ok = os.LookupEnv(envKey)
-	if ok {
-		Debugf(nil, "Setting %s=%q for %q from environment variable %s", key, value, configName, envKey)
-	}
-	return value, ok
+	return os.LookupEnv(ConfigToEnv(string(configName), key))
+
 }
 
 // A configmap.Getter to read from the environment RCLONE_option_name
@@ -33,19 +29,14 @@ func (oev optionEnvVars) Get(key string) (value string, ok bool) {
 	if opt == nil {
 		return "", false
 	}
-	envKey := OptionToEnv(oev.fsInfo.Prefix + "-" + key)
-	value, ok = os.LookupEnv(envKey)
-	if ok {
-		Debugf(nil, "Setting %s_%s=%q from environment variable %s", oev.fsInfo.Prefix, key, value, envKey)
-	} else if opt.NoPrefix {
-		// For options with NoPrefix set, check without prefix too
-		envKey := OptionToEnv(key)
-		value, ok = os.LookupEnv(envKey)
+	// For options with NoPrefix set, check without prefix too
+	if opt.NoPrefix {
+		value, ok = os.LookupEnv(OptionToEnv(key))
 		if ok {
-			Debugf(nil, "Setting %s=%q for %s from environment variable %s", key, value, oev.fsInfo.Prefix, envKey)
+			return value, ok
 		}
 	}
-	return value, ok
+	return os.LookupEnv(OptionToEnv(oev.fsInfo.Prefix + "-" + key))
 }
 
 // A configmap.Getter to read either the default value or the set
