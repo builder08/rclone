@@ -11,56 +11,35 @@ import (
 	"github.com/spf13/pflag"
 )
 
-// setValueFromEnv constructs a name from the flag passed in and
-// sets the value and default from the environment if possible
-// the value may be overridden when the command line is parsed
-//
-// Used to create non-backend flags like --stats
-func setValueFromEnv(flags *pflag.FlagSet, name string) {
-	envKey := fs.OptionToEnv(name)
-	envValue, found := os.LookupEnv(envKey)
+// setDefaultFromEnv constructs a name from the flag passed in and
+// sets the default from the environment if possible.
+func setDefaultFromEnv(flags *pflag.FlagSet, name string) {
+	key := fs.OptionToEnv(name)
+	newValue, found := os.LookupEnv(key)
 	if found {
 		flag := flags.Lookup(name)
 		if flag == nil {
 			log.Fatalf("Couldn't find flag --%q", name)
 		}
-		err := flags.Set(name, envValue)
+		err := flag.Value.Set(newValue)
 		if err != nil {
-			log.Fatalf("Invalid value when setting --%s from environment variable %s=%q: %v", name, envKey, envValue, err)
+			log.Fatalf("Invalid value for environment variable %q when setting default for --%s: %v", key, name, err)
 		}
-		fs.Debugf(nil, "Setting --%s %q from environment variable %s=%q", name, flag.Value, envKey, envValue)
-		flag.DefValue = envValue
+		fs.Debugf(nil, "Set default for --%q from %q to %q (%v)", name, key, newValue, flag.Value)
+		flag.DefValue = newValue
 	}
 }
 
-// SetDefaultFromEnv constructs a name from the flag passed in and
-// sets the default from the environment if possible
-//
-// Used to create backend flags like --skip-links
-func SetDefaultFromEnv(flags *pflag.FlagSet, name string) {
-	envKey := fs.OptionToEnv(name)
-	envValue, found := os.LookupEnv(envKey)
-	if found {
-		flag := flags.Lookup(name)
-		if flag == nil {
-			log.Fatalf("Couldn't find flag --%q", name)
-		}
-		fs.Debugf(nil, "Setting default for %s=%q from environment variable %s", name, envValue, envKey)
-		//err = tempValue.Set()
-		flag.DefValue = envValue
-	}
-}
-
-// StringP defines a flag which can be set by an environment variable
+// StringP defines a flag which can be overridden by an environment variable
 //
 // It is a thin wrapper around pflag.StringP
 func StringP(name, shorthand string, value string, usage string) (out *string) {
 	out = pflag.StringP(name, shorthand, value, usage)
-	setValueFromEnv(pflag.CommandLine, name)
+	setDefaultFromEnv(pflag.CommandLine, name)
 	return out
 }
 
-// StringVarP defines a flag which can be set by an environment variable
+// StringVarP defines a flag which can be overridden by an environment variable
 //
 // It is a thin wrapper around pflag.StringVarP
 func StringVarP(flags *pflag.FlagSet, p *string, name, shorthand string, value string, usage string) {
@@ -77,12 +56,12 @@ func BoolP(name, shorthand string, value bool, usage string) (out *bool) {
 	return out
 }
 
-// BoolVarP defines a flag which can be set by an environment variable
+// BoolP defines a flag which can be overridden by an environment variable
 //
 // It is a thin wrapper around pflag.BoolVarP
 func BoolVarP(flags *pflag.FlagSet, p *bool, name, shorthand string, value bool, usage string) {
 	flags.BoolVarP(p, name, shorthand, value, usage)
-	setValueFromEnv(flags, name)
+	setDefaultFromEnv(flags, name)
 }
 
 // IntP defines a flag which can be set by an environment variable
@@ -90,7 +69,7 @@ func BoolVarP(flags *pflag.FlagSet, p *bool, name, shorthand string, value bool,
 // It is a thin wrapper around pflag.IntP
 func IntP(name, shorthand string, value int, usage string) (out *int) {
 	out = pflag.IntP(name, shorthand, value, usage)
-	setValueFromEnv(pflag.CommandLine, name)
+	setDefaultFromEnv(pflag.CommandLine, name)
 	return out
 }
 
