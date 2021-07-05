@@ -1408,9 +1408,7 @@ func compareDest(ctx context.Context, dst, src fs.Object, CompareDest fs.Fs) (No
 	default:
 		return false, err
 	}
-	opt := defaultEqualOpt(ctx)
-	opt.updateModTime = false
-	if equal(ctx, src, CompareDestFile, opt) {
+	if Equal(ctx, src, CompareDestFile) {
 		fs.Debugf(src, "Destination found in --compare-dest, skipping")
 		return true, nil
 	}
